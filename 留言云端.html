@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>生命传习册 - 岁月活页本</title>
+
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+
+<style>
+  /* === 基础与复古色调 === */
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background-color: #d1cbbd; 
+    font-family: "Songti SC", "SimSun", "Times New Roman", serif;
+    color: #3E3A35;
+    display: flex; justify-content: center; padding: 20px 10px;
+    min-height: 100vh;
+  }
+
+  .notebook-wrapper { display: flex; width: 100%; max-width: 700px; position: relative; }
+
+  .index-tabs { display: flex; flex-direction: column; margin-top: 40px; z-index: 10; }
+  .tab-btn {
+    writing-mode: vertical-lr; padding: 15px 8px; margin-bottom: 5px;
+    background-color: #EBE5D9; border: 1px solid #D2C9B8; border-right: none;
+    border-radius: 8px 0 0 8px; cursor: pointer; font-family: inherit;
+    font-size: 14px; color: #666; transition: all 0.2s; letter-spacing: 2px;
+  }
+  .tab-btn.active { background-color: #F7F3EB; color: #8C5C4A; font-weight: bold; border-right: 2px solid #F7F3EB; }
+  .tab-collection { background-color: #8C5C4A; color: #FFF; border-color: #6a4435; }
+  .tab-collection.active { background-color: #6a4435; color: #fff; border-right: 2px solid #6a4435;}
+
+  .paper-container {
+    flex: 1; background-color: #F7F3EB; padding: 30px 25px;
+    border-radius: 0 8px 8px 0; box-shadow: 5px 10px 25px rgba(0,0,0,0.15);
+    border-left: 2px solid #D2C9B8; position: relative; min-height: 700px;
+    overflow-y: auto;
+  }
+  .paper-container::before {
+    content: ''; position: absolute; top: 20px; bottom: 20px; left: -10px; width: 20px;
+    background-image: radial-gradient(circle, #333 4px, transparent 5px); background-size: 100% 40px;
+  }
+
+  .photo-frame {
+    width: 100%; padding: 10px; background: #fff; border: 1px solid #e0d9cc;
+    box-shadow: inset 0 0 10px rgba(0,0,0,0.05); margin-bottom: 20px; text-align: center;
+  }
+  .photo-frame img { max-width: 100%; max-height: 350px; display: block; margin: 0 auto; filter: sepia(20%) contrast(95%); }
+
+  .view-section { display: none; }
+  .view-section.active { display: block; animation: fadeIn 0.4s; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+
+  .vol-header { text-align: center; margin-bottom: 15px; }
+  .vol-title { font-size: 24px; font-weight: bold; margin-bottom: 5px; display: block; color: #2c2825;}
+  .vol-subtitle { font-size: 14px; color: #888; border-bottom: 1px dashed #D2C9B8; padding-bottom: 10px; display: block; letter-spacing: 1px;}
+  .story-box { font-size: 15px; line-height: 1.8; color: #444; margin: 20px 0; text-indent: 2em; background: #fff; padding: 20px; border: 1px solid #e0d9cc; box-shadow: inset 0 0 10px rgba(0,0,0,0.02);}
+  .story-quote { font-size: 17px; color: #8C5C4A; font-style: italic; font-weight: bold; text-align: center; margin-top: 15px; text-indent: 0; }
+
+  .echo-section { background: #fff; padding: 20px; border-radius: 4px; box-shadow: 0 2px 8px rgba(0,0,0,0.03); margin-top: 30px;}
+  .message-input { width: 100%; height: 90px; margin: 15px 0; border: none; outline: none; background-image: repeating-linear-gradient(transparent, transparent 24px, #EBE5D9 24px, #EBE5D9 25px); font-family: inherit; font-size: 14px; resize: none; background-color: transparent; line-height: 25px;}
+  .signature-line { display: flex; align-items: center; justify-content: flex-end; font-size: 14px; margin-bottom: 20px; }
+  .age-input { width: 45px; border: none; border-bottom: 1px solid #8C5C4A; text-align: center; margin: 0 5px; font-size: 15px; color: #8C5C4A; background: transparent; outline: none; }
+  .submit-btn { width: 100%; padding: 12px; background-color: #8C5C4A; color: #FFF; font-family: inherit; border: 2px solid #3E3A35; box-shadow: 4px 4px 0 #3E3A35; cursor: pointer; font-size: 16px; letter-spacing: 4px; transition: all 0.1s;}
+  .submit-btn:active { box-shadow: 1px 1px 0 #3E3A35; transform: translate(3px, 3px); }
+
+  .collection-grid { display: grid; grid-template-columns: 1fr; gap: 20px; padding: 20px 0; }
+  .collection-card { background: #fff; padding: 15px; border: 1px dashed #D2C9B8; position: relative; }
+  .card-vol-tag { position: absolute; top: -10px; left: 15px; background: #8C5C4A; color: #fff; font-size: 11px; padding: 2px 6px; border-radius: 2px;}
+
+  .toast-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(232, 227, 211, 0.8); display: flex; align-items: center; justify-content: center; opacity: 0; pointer-events: none; transition: opacity 0.3s; z-index: 100; }
+  .toast-overlay.show { opacity: 1; pointer-events: auto; }
+  .stamp { border: 4px solid #8C5C4A; color: #8C5C4A; padding: 20px 30px; font-size: 24px; font-weight: bold; letter-spacing: 2px; transform: rotate(-10deg) scale(1.5); opacity: 0; transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+  .toast-overlay.show .stamp { transform: rotate(-10deg) scale(1); opacity: 1; }
+
+  .printer-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(44,40,37,0.96); z-index: 200; flex-direction: column; align-items: center; padding-top: 20px; overflow-y: auto; padding-bottom: 50px;}
+  .printer-slot { width: 340px; height: 15px; background: #1a1816; border-radius: 10px; margin-bottom: -5px; z-index: 202; flex-shrink: 0;}
+  .receipt-wrapper { width: 320px; height: 0; overflow: hidden; transition: height 2.5s ease-out; z-index: 201; flex-shrink: 0;}
+  .receipt-card { width: 320px; background: #F7F3EB; padding: 25px 20px; border: 2px dashed #D2C9B8; font-family: "Songti SC", serif; color: #3E3A35; box-sizing: border-box; position: relative;}
+  .receipt-img { width: 100%; border: 1px solid #ddd; margin-bottom: 10px; }
+  .receipt-stamp { position: absolute; bottom: 10px; left: 10px; border: 2px solid #8C5C4A; color: #8C5C4A; padding: 3px 8px; font-size: 10px; font-weight: bold; transform: rotate(-15deg); border-radius: 2px; }
+  .action-area { margin-top: 30px; width: 320px; display: none; opacity: 0; transition: opacity 0.5s; flex-shrink: 0; text-align: center;}
+</style>
+</head>
+<body>
+
+<div class="notebook-wrapper">
+  <div class="index-tabs" id="tabContainer"></div>
+  
+  <div class="paper-container" id="mainContainer">
+    <div id="storyView" class="view-section active">
+      <div class="vol-header">
+        <span class="vol-title" id="displayTitle">加载中...</span>
+        <span class="vol-subtitle" id="displaySubtitle"></span>
+      </div>
+
+      <div class="photo-frame">
+        <img id="displayImage" src="" alt="岁月记忆">
+      </div>
+      
+      <div class="story-box">
+        <div id="displayContent"></div>
+        <div class="story-quote" id="displayQuote"></div>
+      </div>
+
+      <div class="echo-section">
+        <p style="font-size: 16px; font-weight: bold; text-align:center; letter-spacing:2px; margin-bottom:15px;">回 声 信 箱</p>
+        <p style="font-size: 14px; font-weight:bold; color: #555;">读了故事，我想说：</p>
+        <textarea id="messageInput" class="message-input" placeholder="写下你的心里话..."></textarea>
+        
+        <div class="signature-line">
+          <span>来自一位</span>
+          <input type="number" id="ageInput" class="age-input" maxlength="3" />
+          <span>岁的倾听者</span>
+        </div>
+        <button class="submit-btn" onclick="submitEcho()">盖戳并生成存根</button>
+      </div>
+    </div>
+
+    <div id="collectionView" class="view-section">
+      <div class="vol-header">
+        <span class="vol-title">岁 月 回 声 画 册</span>
+        <span class="vol-subtitle">来自不同世代的共鸣与守护</span>
+      </div>
+      <div id="collectionGrid" class="collection-grid"></div>
+    </div>
+  </div>
+</div>
+
+<div class="toast-overlay" id="toastOverlay">
+  <div class="stamp">记忆已盖戳<br><span style="font-size:12px; font-family:sans-serif;">[ VALIDATED ]</span></div>
+</div>
+
+<div class="printer-modal" id="printerModal">
+  <div class="printer-slot"></div>
+  <div class="receipt-wrapper" id="receiptWrapper">
+    <div class="receipt-card" id="receiptCard">
+      <div style="text-align:center; font-weight:bold; font-size:16px; border-bottom:1px solid #D2C9B8; padding-bottom:10px; margin-bottom:15px; letter-spacing:2px;">生命传习册 · 岁月存根</div>
+      
+      <div style="font-size:12px; color:#888; margin-bottom:5px;">【故事记忆档案】</div>
+      <div style="background:rgba(255,255,255,0.6); border:1px solid #e0d9cc; padding:10px; margin-bottom:15px;">
+        <img id="printImage" src="" class="receipt-img">
+        <strong id="printVolTitle" style="color:#8C5C4A; font-size:13px;"></strong><br>
+        <span id="printStorySum" style="font-size:12px; color:#666; line-height:1.5;"></span>
+      </div>
+      
+      <div style="font-size:12px; color:#888; margin-bottom:5px;">【回声】</div>
+      <div style="font-size:14px; font-style:italic; line-height:1.6; margin-bottom:15px;" id="printMessage"></div>
+      
+      <div style="text-align:right; font-size:13px; margin-top:20px; color:#8C5C4A; font-weight:bold;" id="printAge"></div>
+      <div class="receipt-stamp">已归档 VALIDATED</div>
+    </div>
+  </div>
+  
+  <div class="action-area" id="actionArea">
+    <button class="submit-btn" onclick="saveAsImage()">保存岁月存根 (图片)</button>
+    <p style="color:#ccc; cursor:pointer; text-decoration:underline; margin-top:15px; font-size:14px; font-family:sans-serif;" onclick="closePrinter()">装订入册并返回</p>
+  </div>
+</div>
+
+<script>
+  // === 更新为最新的应用密钥 ===
+  const APP_ID = "36d3410fd5ccdd799cdb2a6211822156";
+  const REST_API_KEY = "155aeb4655ad550cf124bc58d215cf26";
+  const BMOB_URL = "https://api.bmobcloud.com/1/classes/EchoRecords";
+
+  const volumesData = [
+    {
+      id: 1, tabName: '卷一', title: '旧影凝香', subtitle: '老照片里的家族记忆',
+      image: 'images/vol1.jpg',
+      content: '1949年，新中国成立那年，外公只有四岁。照片里从左到右依次是他的奶奶、母亲、父亲和二哥。这是唯一一张同时有他父母的照片。<br><br>1965年，外公冯联煌从四川回到故乡武汉。那是大嫂生了第一个孩子，被母亲抱在怀里，也是当时真正意义上的一张全家福。没过两年母亲便去世了，这或许是他手中最后一张母亲的照片。',
+      quote: '“定格的不仅是面孔，更是一个时代的呼吸。”',
+      summary: '外公1949年与1965年的两张全家福，定格了父母的容颜，也记录了家族聚散的时代缩影。'
+    },
+    {
+      id: 2, tabName: '卷二', title: '扎根生长', subtitle: '靠双手把日子过好',
+      image: 'images/vol2.jpg',
+      content: '早年间，老家那栋只有一层的水泥平房里，挤着一家五口人。因为土地种不了水稻，老两口就靠着种地瓜和花生，一分一毛地攒钱。花了四五年的时间，硬是靠自己的双手添砖加瓦，把房子一点点盖到了三层。后来大女儿出嫁，大儿子结了婚，在这栋亲手盖起的楼里添了小孙女。',
+      quote: '“日子就像地里的花生，肯下死力气，总能刨出甜头。”',
+      summary: '爷爷奶奶种地瓜攒钱，靠双手把一层平房盖成三层小楼，托起了一个家族的根。'
+    },
+    {
+      id: 3, tabName: '卷三', title: '远行与归处', subtitle: '第一次出远门',
+      image: 'images/vol3.jpg',
+      content: '七十年代，第一次坐绿皮火车去外地打工。站票熬了三天三夜，带的干粮硬得咬不动，只能拿开水泡着咽。在外想家的时候，就摸摸兜里临走时母亲塞的平安符。',
+      quote: '“走得再远，心里也得有根线拴在家里。”',
+      summary: '七十年代的绿皮火车，站票三天三夜，怀里揣着母亲给的平安符，是那代人远行的底色。'
+    },
+    {
+      id: 4, tabName: '卷四', title: '邻里温情', subtitle: '门敞开了，福气才进得来',
+      image: 'images/vol4.jpg',
+      content: '八九十年代，黄爷爷守着小卖部起早贪黑，成了全村第一个买得起电视机的人。但他没关起门来独享，而是把电视机搬到了院子里。每到傍晚，小卖部门口就成了全村最热闹的露天影院。那台闪烁着雪花点的电视机，装满了毫无保留的邻里温情。',
+      quote: '“自己拼出来的甜，分给大伙儿一块尝，那才叫真幸福。”',
+      summary: '黄爷爷买下全村第一台电视，放在院子里和全村人共享，那是那个年代特有的人情味。'
+    },
+    {
+      id: 5, tabName: '卷五', title: '爱是记忆的锚', subtitle: '疾病中的守护',
+      image: 'images/vol5.jpg',
+      content: '丈夫孙志雄71岁时确诊阿尔兹海默症。李中玲寸步不离地陪伴，他大小便失禁，她一天换洗三次衣服。他分辨不出手机和空调遥控器...但丈夫始终没有忘记她。一次他说第二天要结婚，别人问和谁，他说“李中玲”。',
+      quote: '“他忘了全世界，却始终记得她的名字。”',
+      summary: '丈夫患上阿尔兹海默症忘掉了一切，却在别人问起要和谁结婚时，准确地说出妻子的名字。'
+    },
+    {
+      id: 6, tabName: '卷六', title: '未说出口的话', subtitle: '藏在时光里的遗憾',
+      image: 'images/vol6.jpg',
+      content: '抽屉最深处压着一封退回来的信。当年赌气离开老家，总想着等混出个人样再回去低头。等到终于攒够了买车票的钱，老屋却已经换了主人。那句对不起，最终没来得及对父亲说。',
+      quote: '“有些话今天不说，明天就再也找不到听的人了。”',
+      summary: '因赌气离家，等混出头想回去道歉时却已物是人非，留下了永远寄不出的信。'
+    }
+  ];
+
+  let currentIndex = 0;
+
+  function init() {
+    const container = document.getElementById('tabContainer');
+    volumesData.forEach((v, i) => {
+      const b = document.createElement('button');
+      b.className = `tab-btn ${i===0 ? 'active' : ''}`;
+      b.innerText = v.tabName;
+      b.onclick = () => { currentIndex=i; render(); };
+      container.appendChild(b);
+    });
+    const cb = document.createElement('button');
+    cb.className = 'tab-btn tab-collection';
+    cb.innerText = '感想集';
+    cb.onclick = showCollection;
+    container.appendChild(cb);
+    render();
+  }
+
+  function render() {
+    const v = volumesData[currentIndex];
+    document.getElementById('storyView').classList.add('active');
+    document.getElementById('collectionView').classList.remove('active');
+    
+    document.getElementById('displayTitle').innerText = v.title;
+    document.getElementById('displaySubtitle').innerText = v.subtitle;
+    document.getElementById('displayContent').innerHTML = v.content;
+    document.getElementById('displayQuote').innerText = v.quote;
+    
+    const imgElement = document.getElementById('displayImage');
+    imgElement.src = v.image;
+    imgElement.onerror = function() {
+        this.src = 'https://via.placeholder.com/400x250/e0d9cc/8C5C4A?text=待插入老照片';
+    };
+    
+    document.querySelectorAll('.tab-btn').forEach((b,i) => {
+      b.classList.remove('active');
+      if(i===currentIndex) b.classList.add('active');
+    });
+  }
+
+  function submitEcho() {
+    const msg = document.getElementById('messageInput').value.trim();
+    const age = document.getElementById('ageInput').value.trim();
+    
+    if(!age) { alert('请留下您的年龄，让长辈知道是谁在倾听'); return; }
+
+    const v = volumesData[currentIndex];
+    
+    const printImg = document.getElementById('printImage');
+    printImg.src = v.image;
+    printImg.onerror = function() { this.style.display = 'none'; }; 
+    
+    document.getElementById('printVolTitle').innerText = `《${v.tabName}：${v.title}》`;
+    document.getElementById('printStorySum').innerText = v.summary;
+    document.getElementById('printMessage').innerText = msg || '（无言的陪伴）';
+    document.getElementById('printAge').innerText = `—— 来自 ${age} 岁倾听者的回声`;
+
+    const toast = document.getElementById('toastOverlay');
+    toast.classList.add('show');
+
+    const dataToSave = {
+      volName: v.tabName,
+      title: v.title,
+      summary: v.summary,
+      message: msg || '（无言的陪伴）',
+      age: age.toString(),
+      date: new Date().toLocaleDateString()
+    };
+
+    // 🛡️ 保险1：存本地
+    let localRecords = JSON.parse(localStorage.getItem('my_echos') || '[]');
+    localRecords.unshift(dataToSave);
+    localStorage.setItem('my_echos', JSON.stringify(localRecords));
+
+    // 🛡️ 保险2：尝试发云端
+    fetch(BMOB_URL, {
+      method: 'POST',
+      headers: {
+        'X-Bmob-Application-Id': APP_ID,
+        'X-Bmob-REST-API-Key': REST_API_KEY,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(dataToSave)
+    }).catch(err => console.log("云同步失败，但本地已保存"));
+
+    setTimeout(() => {
+      toast.classList.remove('show');
+      document.getElementById('mainContainer').style.display = 'none';
+      document.getElementById('tabContainer').style.display = 'none';
+      
+      const modal = document.getElementById('printerModal');
+      modal.style.display = 'flex';
+      setTimeout(() => { 
+        document.getElementById('receiptWrapper').style.height = document.getElementById('receiptCard').offsetHeight + 'px'; 
+      }, 100);
+      
+      setTimeout(() => {
+        const actionArea = document.getElementById('actionArea');
+        actionArea.style.display = 'block';
+        setTimeout(() => actionArea.style.opacity = '1', 50);
+      }, 2600);
+    }, 2000);
+  }
+
+  function renderCards(records, grid) {
+    if(records.length === 0) {
+      grid.innerHTML = '<p style="text-align:center; color:#999; padding: 40px; font-style:italic;">信箱空空的，快去故事里留下你的第一声回声吧。</p>';
+      return;
+    }
+    grid.innerHTML = '';
+    records.forEach(r => {
+      grid.innerHTML += `
+        <div class="collection-card">
+          <div class="card-vol-tag">${r.volName || '岁月档案'}</div>
+          <div style="font-size: 12px; color: #888; border-bottom: 1px solid #eee; padding-bottom: 8px; margin-bottom: 8px; margin-top: 10px;">
+            <strong>阅读了：</strong>${r.title} - ${r.summary}
+          </div>
+          <p style="font-size: 15px; color: #333; line-height: 1.6; margin-top:10px;">“${r.message}”</p>
+          <div style="text-align:right; font-size:12px; color:#8C5C4A; margin-top:15px; font-weight: bold;">
+            ${r.date} · 来自 ${r.age} 岁倾听者的回声
+          </div>
+        </div>`;
+    });
+  }
+
+  function showCollection() {
+    document.getElementById('storyView').classList.remove('active');
+    document.getElementById('collectionView').classList.add('active');
+    
+    document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+    document.querySelector('.tab-collection').classList.add('active');
+
+    const grid = document.getElementById('collectionGrid');
+    grid.innerHTML = '<p style="text-align:center; color:#8C5C4A; padding: 40px; font-style:italic;">正在翻阅岁月回声...</p>';
+
+    fetch(BMOB_URL + '?order=-createdAt&limit=50', {
+      method: 'GET',
+      headers: {
+        'X-Bmob-Application-Id': APP_ID,
+        'X-Bmob-REST-API-Key': REST_API_KEY,
+        'Content-Type': 'application/json'
+      }
+    })
+    .then(response => response.json())
+    .then(data => {
+      if (data && data.results && data.results.length > 0) {
+        renderCards(data.results, grid);
+      } else {
+        const localRecords = JSON.parse(localStorage.getItem('my_echos') || '[]');
+        renderCards(localRecords, grid);
+      }
+    })
+    .catch(err => {
+      console.log("云端拉取失败，启用本地备用数据");
+      const localRecords = JSON.parse(localStorage.getItem('my_echos') || '[]');
+      renderCards(localRecords, grid);
+    });
+  }
+
+  function saveAsImage() {
+    const btn = document.querySelector('.action-area .submit-btn');
+    btn.innerText = "生成中...";
+    html2canvas(document.getElementById('receiptCard'), {scale:2, backgroundColor:'#F7F3EB'}).then(canvas => {
+      const a = document.createElement('a');
+      a.href = canvas.toDataURL();
+      a.download = '岁月存根.png';
+      a.click();
+      btn.innerText = "保存成功！";
+      setTimeout(() => btn.innerText = "保存岁月存根 (图片)", 2000);
+    });
+  }
+
+  function closePrinter() {
+    document.getElementById('printerModal').style.display = 'none';
+    document.getElementById('receiptWrapper').style.height = '0';
+    document.getElementById('actionArea').style.display = 'none';
+    document.getElementById('actionArea').style.opacity = '0';
+    
+    document.getElementById('mainContainer').style.display = 'block';
+    document.getElementById('tabContainer').style.display = 'flex';
+    
+    document.getElementById('messageInput').value = '';
+    document.getElementById('ageInput').value = '';
+    
+    showCollection();
+  }
+
+  window.onload = init;
+</script>
+
+</body>
+</html>
